@@ -1,4 +1,7 @@
 from pydantic import BaseModel,EmailStr,Field,model_validator
+
+from app.schemas.organization import OrganizationResponse
+from .user import UserResponse
 class LoginRequest(BaseModel):
     email:EmailStr
     password:str = Field(...,min_length=6,max_length=128)
@@ -8,6 +11,7 @@ class RegisterRequest(BaseModel):
     email:EmailStr
     password:str = Field(...,min_length=6,max_length=64)
     confirm_password:str = Field(...,min_length=6,max_length=64)
+    organization_name: str = Field(min_length=2, max_length=255)
     @model_validator(mode="after")
     def password_match(self):
         if(self.password != self.confirm_password):
@@ -16,16 +20,18 @@ class RegisterRequest(BaseModel):
     
 
 class RegisterResponse(BaseModel):    
-    id:int
-    name:str = Field(...,min_length=2,max_length=80,description="User full name")
-    email:EmailStr
+    user: UserResponse
+    organization:OrganizationResponse
+    role:str = Field(...,min_length=2,max_length=50,description="User role in the organization")
+    access_token:str
+    token_type:str
     model_config = {"from_attributes": True}
     
 class LoginResponse(BaseModel):    
-    id:int
-    name:str = Field(...,min_length=2,max_length=80,description="User full name")
-    email:EmailStr
-    token:str
+    user: UserResponse
+    organizations:list[OrganizationResponse]
+    access_token:str
+    token_type:str
     model_config = {"from_attributes": True}    
     
 
