@@ -38,3 +38,9 @@ class TokenData(BaseModel):
     id:int
     email:str
     name:str
+
+class CurrentUser(BaseModel):
+    id:int
+    email:str
+    name:str    
+    model_config = {"from_attributes": True}

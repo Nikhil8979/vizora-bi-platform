@@ -37,3 +37,9 @@ class AuthService:
             email=normalized_email,
             hashed_password=hash_password(data.password),
         )
+
+    async def get_current_user(self, user_id: int):
+        user = await self.repository.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user

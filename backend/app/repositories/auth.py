@@ -18,3 +18,7 @@ class AuthRepository:
         await self.db.commit()
         await self.db.refresh(user)
         return user
+
+    async def get_user_by_id(self, user_id: int) -> User | None:
+        stmt = select(User).where(User.id == user_id)
+        return await self.db.scalar(stmt)
