@@ -2,6 +2,7 @@ import time
 from fastapi import FastAPI,status,HTTPException,Request
 from app.routers import auth
 from app.routers import organization
+from app.routers import organization_member
 
 app = FastAPI(title="Vizora BI Platform API")
 
@@ -66,6 +67,7 @@ async def add_proccess_time_header(request:Request,call_next):
 
 app.include_router(auth.router,prefix="/api/v1")
 app.include_router(organization.router,prefix="/api/v1")
+app.include_router(organization_member.router,prefix="/api/v1")
 
 
 @app.get("/")
