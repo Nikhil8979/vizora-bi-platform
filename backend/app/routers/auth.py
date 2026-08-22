@@ -5,7 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.deps import get_db
 from app.repositories.auth import AuthRepository
-from app.schemas.auth import LoginRequest, RegisterRequest, RegisterResponse, Token
+from app.repositories.organization.organization import OrganizationRepository
+from app.repositories.organization.organization_member import OrganizationMemberRepository
+from app.schemas.auth import LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
 from app.services.auth.auth import AuthService
 from app.utils.responses import api_success
 from app.dependencies import CurrentUser
@@ -17,17 +19,21 @@ def get_auth_repository(db: AsyncSession = Depends(get_db)) -> AuthRepository:
     return AuthRepository(db)
 
 def get_auth_service(repository: AuthRepository = Depends(get_auth_repository)) -> AuthService:
-    return AuthService(repository)
+    return AuthService(
+        repository,
+        organization_repository=OrganizationRepository(db=repository.db),
+        organization_member_repository=OrganizationMemberRepository(db=repository.db),
+    )
 
 
-@router.post("/login", status_code=status.HTTP_200_OK)
+@router.post("/login", status_code=status.HTTP_200_OK, response_model=LoginResponse)
 async def login(
     data: Annotated[OAuth2PasswordRequestForm, Depends()],
     service: AuthService = Depends(get_auth_service),
 ):
     data = LoginRequest(email=data.username, password=data.password)
     result = await service.login(data)
-    return Token(access_token=result.access_token, token_type=result.token_type)
+    return LoginResponse.model_validate(result)
 
 
 @router.post("/register", status_code=status.HTTP_200_OK)
