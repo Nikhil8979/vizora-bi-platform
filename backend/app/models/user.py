@@ -4,6 +4,7 @@ from app.database.db import Base
 from datetime import datetime
 from typing import List
 from app.models.organization_members import OrganizationMembers
+from app.models.data_sources import DataSource
 class User(Base):
     __tablename__ = "users"
     
@@ -23,3 +24,4 @@ class User(Base):
         nullable=False
     )
     organization_members: Mapped[List["OrganizationMembers"]] = relationship("OrganizationMembers", back_populates="user")
+    data_sources: Mapped[List["DataSource"]] = relationship("DataSource", back_populates="user")

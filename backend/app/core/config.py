@@ -8,7 +8,9 @@ class AppConfig(BaseSettings):
     secret_key:str
     algorithm:str
     access_token_expire_minutes:int
+    gcp_project_id:str
     model_config = SettingsConfigDict(env_file=".env")
+
 
 
 @lru_cache

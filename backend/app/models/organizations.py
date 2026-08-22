@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.models.organization_members import OrganizationMembers
+    from app.models.data_sources import DataSource
 
 
 class Organization(Base):
@@ -28,4 +29,5 @@ class Organization(Base):
         nullable=False
     )
     members: Mapped[list["OrganizationMembers"]] = relationship("OrganizationMembers", back_populates="organization")
+    data_sources: Mapped[list["DataSource"]] = relationship("DataSource", back_populates="organization")
 
