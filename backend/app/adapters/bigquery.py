@@ -42,7 +42,7 @@ class BigQueryAdapter(DataSourceAdapter):
             "dataset": dataset.dataset_id,
         }
 
-    async def get_schemas(self):
+    async def get_namespaces(self):
 
         datasets = self.client.list_datasets(
             project=self.project_id
@@ -51,36 +51,41 @@ class BigQueryAdapter(DataSourceAdapter):
         return [
             {
                 "name": dataset.dataset_id,
-                "project_id": dataset.project,
+                "metadata": {
+                    "project_id": dataset.project,
+                },
             }
             for dataset in datasets
         ]
 
-    async def get_tables(
+    async def get_collections(
         self,
-        schema: str,
+        namespace: str,
     ):
 
         tables = self.client.list_tables(
-            f"{self.project_id}.{schema}"
+            f"{self.project_id}.{namespace}"
         )
 
         return [
             {
                 "name": table.table_id,
                 "type": table.table_type,
+                "metadata": {
+                    "namespace": namespace,
+                },
             }
             for table in tables
         ]
 
-    async def get_columns(
+    async def get_fields(
         self,
-        schema: str,
-        table: str,
+        namespace: str,
+        collection: str,
     ):
 
         table_ref = (
-            f"{self.project_id}.{schema}.{table}"
+            f"{self.project_id}.{namespace}.{collection}"
         )
 
         table_obj = self.client.get_table(
@@ -91,7 +96,10 @@ class BigQueryAdapter(DataSourceAdapter):
             {
                 "name": field.name,
                 "data_type": field.field_type,
-                "mode": field.mode,
+                "nullable": field.mode == "NULLABLE",
+                "metadata": {
+                    "mode": field.mode,
+                },
             }
             for field in table_obj.schema
         ]

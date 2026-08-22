@@ -16,6 +16,7 @@ class DataSourceRepository:
         organization_id: UUID,
         user_id: int,
         name: str,
+        description: str | None,
         data_source_type: DataSourceType,
         configuration: dict,
     ) -> DataSource:
@@ -24,6 +25,7 @@ class DataSourceRepository:
             organization_id=organization_id,
             created_by=user_id,
             name=name,
+            description=description,
             type=data_source_type,
             configuration=configuration,
         )

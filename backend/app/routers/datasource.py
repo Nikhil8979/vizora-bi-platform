@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.schemas.data_source import CreateDataSourceRequest, CreateDataSourceResponse, DataSourceResponse
+from app.schemas.data_source import CollectionResponse, CreateDataSourceRequest, CreateDataSourceResponse, DataSourceResponse, FieldResponse, NamespaceResponse
 from app.dependencies import CurrentOrganization,CurrentUser, DbSession
 from uuid import UUID
 from typing import Annotated
@@ -21,7 +21,7 @@ async def get_data_sources(current_organization:CurrentOrganization,service:Data
     return api_success(data=[DataSourceResponse.model_validate(ds) for ds in data_sources], message="Data sources retrieved successfully", code=200)
 
 @router.delete("/{organization_id}/{data_source_id}/")
-async def delete_data_source(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:int):
+async def delete_data_source(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID):
     await service.delete_data_source(organization_id=current_organization.id, data_source_id=data_source_id)
     return api_success(data=None, message="Data source deleted successfully", code=200)
 
@@ -30,16 +30,17 @@ async def test_data_source_connection(current_organization:CurrentOrganization,s
     result = await service.test_data_source_connection(organization_id=current_organization.id, data_source_id=data_source_id)
     return api_success(data=result, message="Data source connection tested successfully", code=200)
 
-@router.get("/{organization_id}/{data_source_id}/schema/")
-async def get_data_source_schema(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID):
-    schema = await service.get_data_source_schema(organization_id=current_organization.id, data_source_id=data_source_id)
-    return api_success(data=schema, message="Data source schema retrieved successfully", code=200)
+@router.get("/{organization_id}/{data_source_id}/namespaces/")
+async def get_data_source_namespaces(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID):
+    namespaces = await service.get_data_source_namespaces(organization_id=current_organization.id, data_source_id=data_source_id)
+    return api_success(data=[NamespaceResponse.model_validate(namespace) for namespace in namespaces], message="Data source namespaces retrieved successfully", code=200)
 
-@router.get("/{organization_id}/{data_source_id}/tables/{schema_name}/")
-async def get_data_source_tables(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID, schema_name:str):
-    tables = await service.get_data_source_tables(organization_id=current_organization.id, data_source_id=data_source_id, schema_name=schema_name)
-    return api_success(data=tables, message="Data source tables retrieved successfully", code=200)
-@router.get("/{organization_id}/{data_source_id}/tables/{schema_name}/{table_name}/columns/")
-async def get_data_source_table_columns(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID, schema_name:str, table_name:str):
-    columns = await service.get_data_source_table_columns(organization_id=current_organization.id, data_source_id=data_source_id, schema_name=schema_name, table_name=table_name)
-    return api_success(data=columns, message="Data source table columns retrieved successfully", code=200)
+@router.get("/{organization_id}/{data_source_id}/namespaces/{namespace_name}/collections/")
+async def get_data_source_collections(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID, namespace_name:str):
+    collections = await service.get_data_source_collections(organization_id=current_organization.id, data_source_id=data_source_id, namespace_name=namespace_name)
+    return api_success(data=[CollectionResponse.model_validate(collection) for collection in collections], message="Data source collections retrieved successfully", code=200)
+
+@router.get("/{organization_id}/{data_source_id}/namespaces/{namespace_name}/collections/{collection_name}/fields/")
+async def get_data_source_fields(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID, namespace_name:str, collection_name:str):
+    fields = await service.get_data_source_fields(organization_id=current_organization.id, data_source_id=data_source_id, namespace_name=namespace_name, collection_name=collection_name)
+    return api_success(data=[FieldResponse.model_validate(field) for field in fields], message="Data source fields retrieved successfully", code=200)
