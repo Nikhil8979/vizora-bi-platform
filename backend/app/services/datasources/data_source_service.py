@@ -55,6 +55,12 @@ class DataSourceService:
     async def get_data_sources(self, organization_id: UUID) -> list[DataSource]:
         return await self.data_source_repository.get_all(organization_id=organization_id)   
 
+    async def get_data_source_by_id(self, organization_id: UUID, data_source_id: UUID) -> DataSource:
+        return await self._get_data_source_or_404(
+            organization_id=organization_id,
+            data_source_id=data_source_id,
+        )
+
     async def delete_data_source(self, organization_id: UUID, data_source_id: UUID) -> None:
         data_source = await self._get_data_source_or_404(organization_id, data_source_id)
 

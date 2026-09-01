@@ -59,7 +59,15 @@ class SecretService:
 
         payload = response.payload.data.decode("UTF-8")
 
-        return json.loads(payload)
+        try:
+            parsed = json.loads(payload)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Secret payload is not valid JSON: {secret_name}") from exc
+
+        if not isinstance(parsed, dict) or not parsed:
+            raise ValueError(f"Secret payload is empty or not an object: {secret_name}")
+
+        return parsed
 
     async def delete_secret(self, secret_name: str) -> None:
         self.client.delete_secret(
