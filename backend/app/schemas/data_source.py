@@ -31,7 +31,7 @@ class SqlConfiguration(BaseModel):
     host: str
     port: int
     database: str
-    schema: str | None = None
+    schema_name: str | None = Field(default=None, validation_alias="schema", serialization_alias="schema")
     ssl_mode: str | None = None
 
 
@@ -46,7 +46,7 @@ class SnowflakeConfiguration(BaseModel):
     account: str
     warehouse: str
     database: str
-    schema: str
+    schema_name: str = Field(validation_alias="schema", serialization_alias="schema")
     role: str | None = None
 
 

@@ -20,6 +20,11 @@ async def get_data_sources(current_organization:CurrentOrganization,service:Data
     data_sources = await service.get_data_sources(organization_id=current_organization.id)
     return api_success(data=[DataSourceResponse.model_validate(ds) for ds in data_sources], message="Data sources retrieved successfully", code=200)
 
+@router.get("/{organization_id}/{data_source_id}/")
+async def get_data_source_by_id(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID):
+    data_source = await service.get_data_source_by_id(organization_id=current_organization.id, data_source_id=data_source_id)
+    return api_success(data=DataSourceResponse.model_validate(data_source), message="Data source retrieved successfully", code=200)
+
 @router.delete("/{organization_id}/{data_source_id}/")
 async def delete_data_source(current_organization:CurrentOrganization,service:DataSourceServiceDeps, data_source_id:UUID):
     await service.delete_data_source(organization_id=current_organization.id, data_source_id=data_source_id)
