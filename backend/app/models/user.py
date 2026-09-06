@@ -5,6 +5,9 @@ from datetime import datetime
 from typing import List
 from app.models.organization_members import OrganizationMembers
 from app.models.data_sources import DataSource
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.models.question import Question
 class User(Base):
     __tablename__ = "users"
     
@@ -25,3 +28,5 @@ class User(Base):
     )
     organization_members: Mapped[List["OrganizationMembers"]] = relationship("OrganizationMembers", back_populates="user")
     data_sources: Mapped[List["DataSource"]] = relationship("DataSource", back_populates="user")
+    saved_questions:Mapped[list["Question"]] = relationship("Question",back_populates="user")
+

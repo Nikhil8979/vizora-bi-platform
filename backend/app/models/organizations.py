@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.organization_members import OrganizationMembers
     from app.models.data_sources import DataSource
+    from app.models.question import Question
 
 
 class Organization(Base):
@@ -30,4 +31,5 @@ class Organization(Base):
     )
     members: Mapped[list["OrganizationMembers"]] = relationship("OrganizationMembers", back_populates="organization")
     data_sources: Mapped[list["DataSource"]] = relationship("DataSource", back_populates="organization")
+    saved_questions:Mapped[list["Question"]] = relationship("Question",back_populates="organisation")
 

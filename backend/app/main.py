@@ -5,7 +5,7 @@ from app.routers import organization
 from app.routers import organization_member
 from app.routers import datasource
 from app.routers import query_engine
-
+from app.routers import question
 app = FastAPI(title="Vizora BI Platform API")
 
 
@@ -72,6 +72,7 @@ app.include_router(organization.router,prefix="/api/v1")
 app.include_router(organization_member.router,prefix="/api/v1")
 app.include_router(datasource.router,prefix="/api/v1")
 app.include_router(query_engine.router,prefix="/api/v1")
+app.include_router(question.router,prefix="/api/v1")
 @app.get("/")
 async def root():
     return {"message":"Hello World"}

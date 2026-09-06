@@ -77,7 +77,10 @@ class QueryService:
                 detail=f"Invalid data source credentials or configuration: {exc}",
             ) from exc
 
-        validation_context = await self._build_validation_context(query, data_source, engine)
+        validation_context = await engine.build_validation_context(
+            query=query,
+            data_source=data_source,
+        )
 
         errors = engine.validator.validate(
             query,
@@ -108,38 +111,3 @@ class QueryService:
                 detail="Data source not found",
             )
         return data_source
-
-    async def _build_validation_context(
-        self,
-        query: Query,
-        data_source: DataSource,
-        engine: Any,
-    ) -> ValidationContext:
-        adapter = getattr(engine.executor, "adapter", None)
-        if adapter is None:
-            raise HTTPException(
-                status_code=500,
-                detail="Query executor does not expose a data source adapter",
-            )
-
-        namespace = query.table.schema or data_source.configuration.get("dataset")
-        if not namespace:
-            raise HTTPException(
-                status_code=400,
-                detail="Table schema is required to validate query columns",
-            )
-
-        fields = await adapter.get_fields(
-            namespace=namespace,
-            collection=query.table.name,
-        )
-
-        columns = {
-            field["name"]: ColumnMetadata(
-                name=field["name"],
-                data_type=field.get("data_type", "unknown"),
-            )
-            for field in fields
-            if isinstance(field, dict) and "name" in field
-        }
-        return ValidationContext(columns=columns)
