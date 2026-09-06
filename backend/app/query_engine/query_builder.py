@@ -5,6 +5,7 @@ from app.adapters.datasource_adapter_factory import DataSourceAdapterFactory
 from app.query_engine.factory import QueryEngineFactory
 from app.query_engine.validation.query_validator import QueryValidator
 from app.query_engine.result.normalizer import ResultNormalizer
+from app.query_engine.validation.visualization_validator import VisualizationValidator
 
 
 class QueryBuilder:
@@ -16,4 +17,6 @@ class QueryBuilder:
         executor = factory.create_executor(data_source.type, adapter)
         validator = QueryValidator()
         normalizer = ResultNormalizer()
-        return QueryEngine(validator, compiler, executor, normalizer)
+        visualization_validator = VisualizationValidator()
+
+        return QueryEngine(validator, compiler, executor, normalizer, visualization_validator)

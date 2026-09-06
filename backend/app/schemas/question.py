@@ -35,3 +35,26 @@ class SaveQuestionResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+class QuestionResponse(BaseModel):
+    id: UUID
+    organization_id: UUID
+    data_source_id: UUID
+    title: str
+    description: str | None
+    query_definition: QueryDefinition
+    visualization: VisualizationConfig
+    created_by: int
+
+    model_config = {
+        "from_attributes": True
+    }
+
+class QuestionExecutionResponse(BaseModel):
+    columns: tuple[str, ...]
+    rows: tuple[dict[str, Any], ...]
+    row_count: int
+
+    model_config = {
+        "from_attributes": True
+    }

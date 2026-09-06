@@ -9,6 +9,7 @@ from app.models.data_sources import DataSource
 from app.query_engine.result.normalizer import ResultNormalizer
 from app.query_engine.validation.context import ColumnMetadata, ValidationContext
 from app.query_engine.validation.query_validator import QueryValidator
+from app.query_engine.validation.visualization_validator import VisualizationValidator
 
 
 @dataclass
@@ -18,6 +19,7 @@ class QueryEngine:
     compiler: QueryCompiler
     executor: BaseQueryExecutor
     normalizer: ResultNormalizer
+    visualization_validator: VisualizationValidator  # Forward reference to avoid circular import
 
     async def build_validation_context(
         self,
