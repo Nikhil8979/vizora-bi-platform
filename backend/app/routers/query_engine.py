@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends
+from app.utils.responses import api_success
+from app.schemas.query_engine import QueryResult
 from typing import Annotated
 
 from app.dependencies import CurrentOrganization, DbSession
@@ -29,8 +31,9 @@ async def execute_query(
         query_definition=query_definition,
         organization_id=current_organization.id,
     )
-    return {
-        "columns": result.columns,
-        "rows": result.rows,
-        "row_count": result.row_count,
-    }
+
+    return api_success(
+        data=QueryResult.model_validate(result),
+        message="Query executed successfully",
+        code=200,
+    )   

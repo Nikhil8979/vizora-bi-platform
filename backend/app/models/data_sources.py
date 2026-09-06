@@ -11,6 +11,7 @@ from sqlalchemy import Enum as SQLEnum
 if TYPE_CHECKING:
     from app.models.organizations import Organization
     from app.models.user import User
+    from app.models.question import Question
 
 
 
@@ -48,6 +49,8 @@ class DataSource(Base):
     )
     user: Mapped["User"] = relationship("User", back_populates="data_sources")
     organization: Mapped["Organization"] = relationship("Organization", back_populates="data_sources")
+    saved_questions:Mapped[list["Question"]] = relationship("Question",back_populates="data_source")
+
 
 
 
