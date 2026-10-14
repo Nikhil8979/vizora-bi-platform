@@ -9,8 +9,18 @@ from app.routers import question
 from app.routers import dashboard
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError
+from fastapi.middleware.cors import CORSMiddleware
 from app.utils.responses import api_error
+
 app = FastAPI(title="Vizora BI Platform API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 

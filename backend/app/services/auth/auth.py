@@ -1,3 +1,4 @@
+from app.repositories.organization.organization_member import OrganizationMemberInviteRequest
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
@@ -67,12 +68,13 @@ class AuthService:
                 )
             )
 
-            membership = await self.organization_member_repository.create(
-                OrganizationMembers(
-                    user_id=user.id,
-                    organization_id=organization.id,
+            membership = await self.organization_member_repository.invite_member(
+                organization_id=organization.id,
+                data=OrganizationMemberInviteRequest(
+                    email=user.email,
                     role="OWNER",
-                )
+                ),
+                member_user_id=user.id
             )
 
             await self.repository.commit()
