@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
-import { QueryResultData } from '../types'
+import { QueryResultData, formatColumnHeader } from '../types'
 import { VisualizationConfig, METABASE_PALETTE } from '../visualizationTypes'
+import { BarChart3 } from 'lucide-react'
 
 interface EChartsRendererProps {
   data: QueryResultData
@@ -28,19 +29,21 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
   }
 
   useEffect(() => {
-    if (!chartRef.current) return
+    if (!chartRef.current || !data.columns || data.columns.length === 0) return
 
-    // Initialize chart if needed
-    if (!chartInstance.current) {
-      chartInstance.current = echarts.init(chartRef.current, undefined, {
-        renderer: 'svg',
+    // Initialize or reuse existing echarts instance on the DOM element
+    let myChart = echarts.getInstanceByDom(chartRef.current)
+    if (!myChart) {
+      myChart = echarts.init(chartRef.current, undefined, {
+        renderer: 'canvas',
       })
     }
+    chartInstance.current = myChart
 
-    const myChart = chartInstance.current
-    const palette = config.display.colorPalette && config.display.colorPalette.length > 0
-      ? config.display.colorPalette
-      : METABASE_PALETTE
+    const palette =
+      config.display.colorPalette && config.display.colorPalette.length > 0
+        ? config.display.colorPalette
+        : METABASE_PALETTE
 
     // Prepare Column Index Map
     const colNameToIdx: Record<string, number> = {}
@@ -48,23 +51,62 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
       colNameToIdx[col.name] = idx
     })
 
-    const chartType = config.type
+    // Helper: is column numeric
+    const isColNumeric = (colIndex: number): boolean => {
+      if (colIndex < 0 || colIndex >= data.columns.length) return false
+      const col = data.columns[colIndex]
+      const typeStr = (col.type || '').toLowerCase()
+      if (['int', 'float', 'num', 'double', 'decimal', 'real', 'bigint'].some((t) => typeStr.includes(t))) {
+        return true
+      }
+      for (let i = 0; i < Math.min(data.rows.length, 10); i++) {
+        const val = data.rows[i]?.values?.[colIndex]
+        if (typeof val === 'number') return true
+        if (val !== null && val !== undefined && val !== '' && !isNaN(Number(val)) && typeof val !== 'boolean') {
+          return true
+        }
+      }
+      return false
+    }
+
+    // Default chart type if set to table
+    const rawType = config.type || 'bar'
+    const chartType = rawType === 'table' ? 'bar' : rawType
 
     if (chartType === 'pie') {
+      // ========================================================
       // PIE / DONUT CHART
-      const dimCol = config.data.dimensionColumn || config.data.xAxisColumn || data.columns[0]?.name || ''
-      const metricCol = config.data.metricColumn || config.data.yAxisColumns[0] || data.columns[1]?.name || ''
+      // ========================================================
+      let dimCol = config.data.dimensionColumn || config.data.xAxisColumn
+      if (!dimCol || !(dimCol in colNameToIdx)) {
+        // Find first non-numeric column
+        const nonNumCol = data.columns.find((_, idx) => !isColNumeric(idx))
+        dimCol = nonNumCol ? nonNumCol.name : data.columns[0]?.name || ''
+      }
+
+      let metricCol = config.data.metricColumn || config.data.yAxisColumns[0]
+      if (!metricCol || !(metricCol in colNameToIdx)) {
+        // Find first numeric column
+        const numCol = data.columns.find((_, idx) => isColNumeric(idx))
+        metricCol = numCol ? numCol.name : (data.columns.length > 1 ? data.columns[1].name : data.columns[0]?.name || '')
+      }
 
       const dimIdx = colNameToIdx[dimCol] ?? 0
       const metricIdx = colNameToIdx[metricCol] ?? (data.columns.length > 1 ? 1 : 0)
+      const metricIsNumeric = isColNumeric(metricIdx)
 
       // Aggregate / extract pie data
       const pieDataMap: Record<string, number> = {}
       data.rows.forEach((r) => {
         const key = String(r.values[dimIdx] ?? 'Unknown')
-        const rawVal = Number(r.values[metricIdx])
-        const numVal = isNaN(rawVal) ? 0 : rawVal
-        pieDataMap[key] = (pieDataMap[key] || 0) + numVal
+        if (metricIsNumeric) {
+          const rawVal = Number(r.values[metricIdx])
+          const numVal = isNaN(rawVal) ? 0 : rawVal
+          pieDataMap[key] = (pieDataMap[key] || 0) + numVal
+        } else {
+          // If metric column is categorical, count occurrences
+          pieDataMap[key] = (pieDataMap[key] || 0) + 1
+        }
       })
 
       const pieData = Object.entries(pieDataMap).map(([name, value]) => ({
@@ -83,7 +125,7 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
             const formattedVal = formatNumber(params.value, config.display.numberFormatting)
             return `
               <div style="font-family: inherit; padding: 2px;">
-                <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">${params.seriesName || dimCol}</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">${dimCol}</div>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
                   <span style="display: flex; align-items: center; gap: 6px;">
                     <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${params.color};"></span>
@@ -140,20 +182,43 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
 
       myChart.setOption(option, true)
     } else {
+      // ========================================================
       // BAR OR LINE CHART
-      const xCol = config.data.xAxisColumn || data.columns[0]?.name || ''
-      const yCols = config.data.yAxisColumns.length > 0
-        ? config.data.yAxisColumns
-        : [data.columns[1]?.name || data.columns[0]?.name || '']
+      // ========================================================
+      let xCol = config.data.xAxisColumn
+      if (!xCol || !(xCol in colNameToIdx)) {
+        // Prefer categorical column for X
+        const nonNumCol = data.columns.find((_, idx) => !isColNumeric(idx))
+        xCol = nonNumCol ? nonNumCol.name : data.columns[0]?.name || ''
+      }
+
+      let yCols = (config.data.yAxisColumns || []).filter((c) => c in colNameToIdx)
+      if (yCols.length === 0) {
+        // Find first numeric column that is distinct from xCol
+        const numCol = data.columns.find((c, idx) => c.name !== xCol && isColNumeric(idx))
+        if (numCol) {
+          yCols = [numCol.name]
+        } else {
+          // If no numeric column, pick second column or first
+          const otherCol = data.columns.find((c) => c.name !== xCol)
+          yCols = [otherCol ? otherCol.name : data.columns[0]?.name || '']
+        }
+      }
 
       const xIdx = colNameToIdx[xCol] ?? 0
       const xCategories = data.rows.map((r) => String(r.values[xIdx] ?? ''))
 
       const series: echarts.SeriesOption[] = yCols.map((yColName, yIdx) => {
         const yColIndex = colNameToIdx[yColName] ?? 1
+        const yIsNumeric = isColNumeric(yColIndex)
+
         const seriesData = data.rows.map((r) => {
-          const val = Number(r.values[yColIndex])
-          return isNaN(val) ? 0 : val
+          if (yIsNumeric) {
+            const raw = Number(r.values[yColIndex])
+            return isNaN(raw) ? 0 : raw
+          }
+          // Fallback if categorical column was mapped to Y
+          return 1
         })
 
         const markLineOption = config.display.showGoalLine
@@ -182,7 +247,7 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
 
         if (chartType === 'line') {
           return {
-            name: yColName,
+            name: formatColumnHeader(yColName),
             type: 'line',
             smooth: 0.25,
             showSymbol: true,
@@ -207,7 +272,7 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
 
         // Default: Bar Chart
         return {
-          name: yColName,
+          name: formatColumnHeader(yColName),
           type: 'bar',
           barMaxWidth: 44,
           itemStyle: {
@@ -269,14 +334,17 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
             `
           },
         },
-        legend: yCols.length > 1 ? {
-          top: 8,
-          textStyle: { color: '#64748b', fontSize: 11 },
-        } : undefined,
+        legend:
+          yCols.length > 1
+            ? {
+                top: 8,
+                textStyle: { color: '#64748b', fontSize: 11 },
+              }
+            : undefined,
         xAxis: {
           type: 'category',
           data: xCategories,
-          name: config.axes.showXLabel ? (config.axes.xLabelText || xCol) : undefined,
+          name: config.axes.showXLabel ? config.axes.xLabelText || xCol : undefined,
           nameLocation: 'middle',
           nameGap: 36,
           nameTextStyle: {
@@ -304,7 +372,7 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
         },
         yAxis: {
           type: config.axes.yScale === 'log' ? 'log' : 'value',
-          name: config.axes.showYLabel ? (config.axes.yLabelText || yCols[0]) : undefined,
+          name: config.axes.showYLabel ? config.axes.yLabelText || yCols[0] : undefined,
           nameLocation: 'middle',
           nameGap: 48,
           nameTextStyle: {
@@ -330,27 +398,58 @@ export const EChartsRenderer: React.FC<EChartsRendererProps> = ({ data, config }
       myChart.setOption(option, true)
     }
 
+    // Force resize on next frame and short timeout to guarantee correct layout computation
+    requestAnimationFrame(() => {
+      myChart.resize()
+    })
+    const resizeTimeout = setTimeout(() => {
+      myChart.resize()
+    }, 60)
+
     // Resize observer for responsive layout
     const resizeObserver = new ResizeObserver(() => {
       myChart.resize()
     })
     resizeObserver.observe(chartRef.current)
 
+    const handleWindowResize = () => {
+      myChart.resize()
+    }
+    window.addEventListener('resize', handleWindowResize)
+
     return () => {
+      clearTimeout(resizeTimeout)
       resizeObserver.disconnect()
+      window.removeEventListener('resize', handleWindowResize)
     }
   }, [data, config])
 
   useEffect(() => {
     return () => {
-      chartInstance.current?.dispose()
-      chartInstance.current = null
+      if (chartInstance.current) {
+        chartInstance.current.dispose()
+        chartInstance.current = null
+      }
     }
   }, [])
 
+  if (!data || !data.columns || data.columns.length === 0) {
+    return (
+      <div className="w-full h-full min-h-[380px] flex flex-col items-center justify-center p-8 text-center text-slate-400">
+        <BarChart3 className="w-8 h-8 mb-2 opacity-50" />
+        <p className="text-xs font-medium">No data columns available to visualize</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center relative min-h-[340px]">
-      <div ref={chartRef} className="w-full h-full min-h-[340px]" />
+    <div className="w-full h-full min-h-[380px] flex-1 flex flex-col items-center justify-center relative">
+      <div
+        ref={chartRef}
+        style={{ width: '100%', height: '100%', minHeight: '380px' }}
+        className="w-full h-full min-h-[380px] flex-1"
+      />
     </div>
   )
 }
+

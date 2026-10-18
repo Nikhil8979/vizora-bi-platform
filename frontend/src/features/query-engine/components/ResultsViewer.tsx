@@ -16,8 +16,10 @@ import {
   Settings,
   ArrowUpDown,
   FileSpreadsheet,
+  Bookmark,
+  SlidersHorizontal,
 } from 'lucide-react'
-import { QueryResultData } from '../types'
+import { QueryResultData, formatColumnHeader } from '../types'
 import { VisualizationConfig } from '../visualizationTypes'
 import { EChartsRenderer } from './EChartsRenderer'
 
@@ -32,6 +34,9 @@ interface ResultsViewerProps {
   onOpenVisualPicker: () => void
   onOpenVisualSettings: () => void
   onExportCsv?: () => void
+  onSaveQuestion?: () => void
+  requiresAggregation?: boolean
+  onOpenEditor?: () => void
 }
 
 export const ResultsViewer: React.FC<ResultsViewerProps> = ({
@@ -45,6 +50,9 @@ export const ResultsViewer: React.FC<ResultsViewerProps> = ({
   onOpenVisualPicker,
   onOpenVisualSettings,
   onExportCsv,
+  onSaveQuestion,
+  requiresAggregation = false,
+  onOpenEditor,
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [copiedCell, setCopiedCell] = useState<string | null>(null)
@@ -139,7 +147,7 @@ export const ResultsViewer: React.FC<ResultsViewerProps> = ({
       case 'pie':
         return <PieChartIcon className="w-4 h-4" />
       default:
-        return <TableIcon className="w-4 h-4" />
+        return <BarChart3 className="w-4 h-4" />
     }
   }
 
@@ -245,7 +253,7 @@ export const ResultsViewer: React.FC<ResultsViewerProps> = ({
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 truncate">
                           {getColIcon(col.type)}
-                          <span className="truncate">{col.name}</span>
+                          <span className="truncate">{formatColumnHeader(col.name)}</span>
                         </div>
                         {sortCol === idx ? (
                           <span className="text-[10px] text-[#509ee3] font-bold">
@@ -305,8 +313,31 @@ export const ResultsViewer: React.FC<ResultsViewerProps> = ({
           /* ======================================================== */
           /* CHART VIEW (APACHE ECHARTS)                              */
           /* ======================================================== */
-          <div className="h-full w-full p-4 flex flex-col">
-            <EChartsRenderer data={data} config={visConfig} />
+          <div className="h-full w-full p-4 flex flex-col flex-1 min-h-0 relative">
+            {requiresAggregation ? (
+              <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center select-none bg-slate-50/40">
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#509ee3] mb-4 shadow-sm">
+                  <BarChart3 className="w-7 h-7" />
+                </div>
+                <h3 className="text-base font-bold text-slate-800 mb-2">
+                  Pick a metric and a group by column
+                </h3>
+                <p className="text-sm text-slate-500 max-w-md leading-relaxed">
+                  Click on <span className="font-semibold text-slate-800">sql editor</span> in the top right corner. Then pick a metric and a column to group by.
+                </p>
+                {onOpenEditor && (
+                  <button
+                    onClick={onOpenEditor}
+                    className="mt-5 px-4 py-2 rounded-lg bg-[#509ee3] hover:bg-[#408ecf] active:scale-[0.99] text-white text-xs font-bold shadow-sm shadow-blue-500/20 inline-flex items-center gap-2 cursor-pointer transition"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-white" />
+                    <span>Open SQL Editor</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <EChartsRenderer data={data} config={visConfig} />
+            )}
           </div>
         )}
       </div>
@@ -333,6 +364,18 @@ export const ResultsViewer: React.FC<ResultsViewerProps> = ({
               <Settings className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {onSaveQuestion && (
+            <button
+              onClick={onSaveQuestion}
+              type="button"
+              className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs text-xs"
+              title="Save this question"
+            >
+              <Bookmark className="w-3.5 h-3.5 text-[#509ee3]" />
+              <span>Save</span>
+            </button>
+          )}
         </div>
 
         {/* Center: Table View / Chart View Segmented Toggle */}

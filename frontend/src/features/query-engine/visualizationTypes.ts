@@ -53,23 +53,49 @@ export function createDefaultVisualizationConfig(result?: QueryResultData | null
 
   if (result && result.columns.length > 0) {
     const cols = result.columns.map((c) => c.name)
+
+    // Check both col.type string and row values to identify numeric columns
+    const isColumnNumeric = (colIndex: number): boolean => {
+      const typeStr = (result.columns[colIndex]?.type || '').toLowerCase()
+      if (['integer', 'float', 'number', 'numeric', 'int', 'double', 'decimal', 'real', 'bigint', 'smallint', 'tinyint'].some((t) => typeStr.includes(t))) {
+        return true
+      }
+      if (result.rows && result.rows.length > 0) {
+        let numericCount = 0
+        let nonNullCount = 0
+        for (let i = 0; i < Math.min(result.rows.length, 20); i++) {
+          const val = result.rows[i]?.values?.[colIndex]
+          if (val !== null && val !== undefined && val !== '') {
+            nonNullCount++
+            if (typeof val === 'number' || (!isNaN(Number(val)) && typeof val !== 'boolean')) {
+              numericCount++
+            }
+          }
+        }
+        if (nonNullCount > 0 && numericCount / nonNullCount >= 0.8) {
+          return true
+        }
+      }
+      return false
+    }
+
     const numericCols = result.columns
-      .filter((c) =>
-        ['integer', 'float', 'number', 'numeric', 'int', 'double', 'decimal'].some((t) =>
-          c.type.toLowerCase().includes(t)
-        )
-      )
+      .filter((_, idx) => isColumnNumeric(idx))
       .map((c) => c.name)
 
     const categoricalCols = result.columns
-      .filter((c) => !numericCols.includes(c.name))
+      .filter((_, idx) => !isColumnNumeric(idx))
       .map((c) => c.name)
 
     // Pick best X-axis: prefer categorical/date, otherwise first column
     defaultX = categoricalCols.length > 0 ? categoricalCols[0] : cols[0]
 
-    // Pick best Y-axis: prefer numeric columns, otherwise second column
-    if (numericCols.length > 0) {
+    // Pick best Y-axis: prefer numeric columns that are different from X
+    const validNumeric = numericCols.filter((c) => c !== defaultX)
+    if (validNumeric.length > 0) {
+      defaultY = [validNumeric[0]]
+      defaultMetric = validNumeric[0]
+    } else if (numericCols.length > 0) {
       defaultY = [numericCols[0]]
       defaultMetric = numericCols[0]
     } else {

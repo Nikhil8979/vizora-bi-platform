@@ -9,6 +9,7 @@ import {
   RefreshCw,
   CheckCircle,
   Users,
+  Wand2,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useCurrentUserQuery } from '@/features/auth/hooks'
@@ -27,7 +28,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 }) => {
   const navigate = useNavigate()
   const { user, organizations: storeOrgs, currentOrganization } = useAuthStore()
-  
+
   const {
     data: organizationsData,
     refetch: refetchOrgs,
@@ -62,10 +63,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
         <div className="flex flex-wrap items-center gap-3">
           <Button
-            onClick={() => (onNavigateToMembers ? onNavigateToMembers() : navigate('/members'))}
+            onClick={() => navigate('/query-builder')}
             className="bg-[#509ee3] hover:bg-[#438bc8] active:bg-[#3b7cb4] text-white shadow-md shadow-blue-500/20 cursor-pointer font-bold"
           >
-            <Users className="w-4 h-4 mr-2" />
+            <Wand2 className="w-4 h-4 mr-2" />
+            <span>Ask a Question</span>
+          </Button>
+          <Button
+            onClick={() => (onNavigateToMembers ? onNavigateToMembers() : navigate('/members'))}
+            variant="outline"
+            className="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 cursor-pointer font-medium"
+          >
+            <Users className="w-4 h-4 mr-2 text-[#509ee3]" />
             <span>Manage Team</span>
           </Button>
           <Button
@@ -74,7 +83,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             className="bg-white hover:bg-slate-50 text-slate-700 border-slate-200 cursor-pointer font-medium"
           >
             <Plus className="w-4 h-4 mr-2 text-[#509ee3]" />
-            <span>New Query</span>
+            <span>SQL Query</span>
           </Button>
         </div>
       </div>
@@ -140,7 +149,22 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       </Card>
 
       {/* BI Platform Modules */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <Card
+          onClick={() => navigate('/query-builder')}
+          className="border-slate-200 bg-white hover:border-[#509ee3]/60 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <CardHeader>
+            <div className="w-10 h-10 rounded-xl bg-purple-50 text-[#7064e6] border border-purple-100 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+              <Wand2 className="w-5 h-5" />
+            </div>
+            <CardTitle className="text-base text-slate-900 group-hover:text-[#509ee3] transition-colors">Query Builder</CardTitle>
+            <CardDescription className="text-slate-500">
+              Create visual questions with Metabase notebook pipeline without writing SQL.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
         <Card
           onClick={() => (onNavigateToDataSources ? onNavigateToDataSources() : navigate('/datasources'))}
           className="border-slate-200 bg-white hover:border-[#509ee3]/60 hover:shadow-md transition-all cursor-pointer group"

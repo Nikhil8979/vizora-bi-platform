@@ -35,7 +35,19 @@ export interface ComparisonFilter {
   value: any
 }
 
-export type FilterExpression = ComparisonFilter
+export interface NullFilter {
+  type: 'null'
+  column: string
+  is_null: boolean
+}
+
+export interface LogicalFilter {
+  type: 'logical'
+  operator: 'AND' | 'OR'
+  conditions: FilterExpression[]
+}
+
+export type FilterExpression = ComparisonFilter | NullFilter | LogicalFilter
 
 export interface SortDefinition {
   field: string
@@ -129,3 +141,125 @@ export function normalizeQueryResult(raw: any): QueryResultData {
     row_count: raw.row_count ?? rows.length,
   }
 }
+
+/**
+ * Compiles a QueryDefinition into readable SQL for previewing and editing.
+ */
+export function compileQueryDefinitionToSql(queryDef: QueryDefinition): string {
+  if (!queryDef || !queryDef.table?.name) return '-- Select a table to generate SQL'
+
+  const selectParts: string[] = []
+
+  if (queryDef.dimensions && queryDef.dimensions.length > 0) {
+    queryDef.dimensions.forEach((d) => {
+      selectParts.push(d.alias ? `${d.column} AS ${d.alias}` : d.column)
+    })
+  }
+
+  if (queryDef.metrics && queryDef.metrics.length > 0) {
+    queryDef.metrics.forEach((m) => {
+      const agg =
+        m.aggregation === 'COUNT_DISTINCT'
+          ? `COUNT(DISTINCT ${m.column})`
+          : `${m.aggregation}(${m.column})`
+      const cleanCol = (m.column || '').replace(/[^a-zA-Z0-9_]/g, '')
+      const alias =
+        m.alias ||
+        (m.aggregation === 'COUNT'
+          ? cleanCol && cleanCol !== '*'
+            ? `count_${cleanCol}`
+            : 'count'
+          : m.aggregation === 'COUNT_DISTINCT'
+          ? cleanCol
+            ? `distinct_${cleanCol}`
+            : 'distinct_count'
+          : cleanCol
+          ? `${m.aggregation.toLowerCase()}_${cleanCol}`
+          : m.aggregation.toLowerCase())
+      selectParts.push(`${agg} AS ${alias}`)
+    })
+  }
+
+  const selectClause = selectParts.length > 0 ? selectParts.join(',\n  ') : '*'
+  const distinctClause = queryDef.distinct ? 'DISTINCT ' : ''
+
+  const tableName = queryDef.table.schema
+    ? `"${queryDef.table.schema}"."${queryDef.table.name}"`
+    : `"${queryDef.table.name}"`
+
+  let sql = `SELECT ${distinctClause}\n  ${selectClause}\nFROM ${tableName}`
+
+  const formatFilter = (filter: FilterExpression): string => {
+    if (!filter) return ''
+    if (filter.type === 'comparison') {
+      const val =
+        typeof filter.value === 'string'
+          ? `'${filter.value}'`
+          : filter.value === null
+          ? 'NULL'
+          : filter.value
+      return `${filter.column} ${filter.operator} ${val}`
+    }
+    if (filter.type === 'null') {
+      return `${filter.column} ${filter.is_null ? 'IS NULL' : 'IS NOT NULL'}`
+    }
+    if (filter.type === 'logical') {
+      const inner = filter.conditions
+        .map(formatFilter)
+        .filter(Boolean)
+        .join(` ${filter.operator} `)
+      return inner ? `(${inner})` : ''
+    }
+    return ''
+  }
+
+  if (queryDef.filters) {
+    const whereClause = formatFilter(queryDef.filters)
+    if (whereClause) {
+      sql += `\nWHERE ${whereClause}`
+    }
+  }
+
+  if (
+    queryDef.metrics &&
+    queryDef.metrics.length > 0 &&
+    queryDef.dimensions &&
+    queryDef.dimensions.length > 0
+  ) {
+    const groupByCols = queryDef.dimensions.map((d) => d.column).join(', ')
+    sql += `\nGROUP BY ${groupByCols}`
+  }
+
+  if (queryDef.sort && queryDef.sort.length > 0) {
+    const sortClause = queryDef.sort
+      .map((s) => `${s.field} ${s.direction}`)
+      .join(', ')
+    sql += `\nORDER BY ${sortClause}`
+  }
+
+  if (queryDef.limit) {
+    sql += `\nLIMIT ${queryDef.limit}`
+  }
+
+  return sql + ';'
+}
+
+/**
+ * Formats raw/driver column names (like BigQuery's f0_, f1_, _col0) into readable names.
+ */
+export function formatColumnHeader(name: string): string {
+  if (!name) return ''
+  const trimmed = name.trim()
+  const lower = trimmed.toLowerCase()
+  if (lower === 'f0_' || lower === 'f_0' || lower === 'f0' || lower === '_col0') {
+    return 'Count'
+  }
+  const match = lower.match(/^f_?(\d+)_?$/)
+  if (match) {
+    const idx = parseInt(match[1], 10)
+    return idx === 0 ? 'Count' : `Metric ${idx + 1}`
+  }
+  return trimmed
+}
+
+

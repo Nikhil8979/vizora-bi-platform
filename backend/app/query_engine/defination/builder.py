@@ -39,7 +39,11 @@ class QueryDefinitionBuilder:
 
         where = self._build_filter(definition.filters) if definition.filters else None
         having = self._build_filter(definition.having) if definition.having else None
-        group_by = tuple(Column(name=dimension.column) for dimension in definition.dimensions)
+        group_by = (
+            tuple(Column(name=dimension.column) for dimension in definition.dimensions)
+            if definition.metrics
+            else ()
+        )
         order_by = tuple(self._build_sort(sort) for sort in definition.sort)
         return Query(
             datasource_id=definition.data_source_id,
@@ -72,7 +76,7 @@ class QueryDefinitionBuilder:
                 function=AggregateFunction(metric.aggregation.value),
                 expression=Column(name=metric.column),
             ),
-            alias=metric.alias
+            alias=metric.alias,
         )
 
     def _build_filter(self, filter: FilterExpression):

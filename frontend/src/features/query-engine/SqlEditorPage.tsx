@@ -16,6 +16,7 @@ import {
   VisualizationConfig,
   createDefaultVisualizationConfig,
 } from './visualizationTypes'
+import { SaveQuestionDialog } from './components/SaveQuestionDialog'
 
 export const SqlEditorPage: React.FC = () => {
   const { currentOrganization } = useAuthStore()
@@ -54,6 +55,7 @@ export const SqlEditorPage: React.FC = () => {
   const [visConfig, setVisConfig] = useState<VisualizationConfig>(() =>
     createDefaultVisualizationConfig(null)
   )
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
 
   const executeMutation = useExecuteQueryMutation(currentOrganization?.id, {
     onSuccess: (data) => {
@@ -204,6 +206,21 @@ export const SqlEditorPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleExecute])
 
+  // Current parsed QueryDefinition
+  const currentQueryDefinition = React.useMemo(() => {
+    if (!selectedDataSourceId || !sql.trim()) return null
+    try {
+      return parseSqlToQueryDefinition(
+        sql.trim(),
+        selectedDataSourceId,
+        selectedSchema,
+        availableColumns
+      )
+    } catch {
+      return null
+    }
+  }, [sql, selectedDataSourceId, selectedSchema, availableColumns])
+
   return (
     <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-100/70">
       {/* 1. Left Panel: Either Visualization Sidebar (when configuring visual) OR Data Catalog */}
@@ -252,6 +269,7 @@ export const SqlEditorPage: React.FC = () => {
             value={sql}
             onChange={setSql}
             onExecute={handleExecute}
+            onSaveQuestion={() => setIsSaveModalOpen(true)}
             isExecuting={executeMutation.isPending}
             placeholder="Enter your SQL query (e.g. SELECT * FROM table LIMIT 100)..."
             isCatalogOpen={isVisSidebarOpen || isCatalogOpen}
@@ -284,7 +302,18 @@ export const SqlEditorPage: React.FC = () => {
             error={executionError}
             isLoading={executeMutation.isPending}
             viewMode={viewMode}
-            onViewModeChange={setViewMode}
+            onViewModeChange={(mode) => {
+              setViewMode(mode)
+              if (mode === 'chart' && (visConfig.type === 'table' || !visConfig.data.xAxisColumn)) {
+                setVisConfig((prev) => {
+                  const def = createDefaultVisualizationConfig(queryResult)
+                  return {
+                    ...def,
+                    type: prev.type === 'table' ? 'bar' : prev.type,
+                  }
+                })
+              }
+            }}
             visConfig={visConfig}
             onOpenVisualPicker={() => {
               setVisSidebarTab('picker')
@@ -294,9 +323,25 @@ export const SqlEditorPage: React.FC = () => {
               setVisSidebarTab('settings')
               setIsVisSidebarOpen(true)
             }}
+            onSaveQuestion={() => setIsSaveModalOpen(true)}
           />
         </div>
       </div>
+
+      {/* Save Question Modal Dialog */}
+      <SaveQuestionDialog
+        open={isSaveModalOpen}
+        onOpenChange={setIsSaveModalOpen}
+        organizationId={currentOrganization?.id}
+        dataSourceName={dataSources.find((d) => d.id === selectedDataSourceId)?.name}
+        queryDefinition={currentQueryDefinition}
+        visualizationType={viewMode === 'chart' ? visConfig.type : 'table'}
+        visualizationSettings={{
+          ...visConfig,
+          viewMode,
+        }}
+        sql={sql}
+      />
     </div>
   )
 }

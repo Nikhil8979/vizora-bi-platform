@@ -208,8 +208,12 @@ export function generateSqlFromQuery(query: QueryDefinition): string {
   // WHERE
   if (query.filters) {
     const f = query.filters
-    const val = typeof f.value === 'string' ? `'${f.value}'` : f.value
-    sql += `\nWHERE ${f.column} ${f.operator} ${val}`
+    if (f.type === 'comparison') {
+      const val = typeof f.value === 'string' ? `'${f.value}'` : f.value
+      sql += `\nWHERE ${f.column} ${f.operator} ${val}`
+    } else if (f.type === 'null') {
+      sql += `\nWHERE ${f.column} ${f.is_null ? 'IS NULL' : 'IS NOT NULL'}`
+    }
   }
 
   // GROUP BY

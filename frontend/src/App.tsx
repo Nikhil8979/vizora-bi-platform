@@ -7,6 +7,8 @@ import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
 import { MembersPage } from '@/features/members/MembersPage'
 import { DataSourcesPage } from '@/features/datasources/DataSourcesPage'
 import { SqlEditorPage } from '@/features/query-engine/SqlEditorPage'
+import { QueryBuilderPage } from '@/features/query-builder'
+import { QuestionDetailPage } from '@/features/query-engine/QuestionDetailPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 
 // Protected Route Guard
@@ -61,6 +63,9 @@ export function App() {
         <Route path="/members" element={<MembersPage />} />
         <Route path="/workbench" element={<SqlEditorPage />} />
         <Route path="/sql-editor" element={<SqlEditorPage />} />
+        <Route path="/query-builder" element={<QueryBuilderPage />} />
+        <Route path="/explore" element={<Navigate to="/query-builder" replace />} />
+        <Route path="/question/:questionId" element={<QuestionDetailPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 

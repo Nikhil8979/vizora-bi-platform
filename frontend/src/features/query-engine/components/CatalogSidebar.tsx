@@ -218,19 +218,17 @@ export const CatalogSidebar: React.FC<CatalogSidebarProps> = ({
                           onSelectTable(selectedDataSourceId, selectedSchema, tblName)
                           toggleTableExpansion(selectedSchema || 'public', tblName)
                         }}
-                        className={`flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold cursor-pointer group transition ${
-                          isSelected
+                        className={`flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold cursor-pointer group transition ${isSelected
                             ? 'bg-[#f0f7fd] border border-[#badcf7] text-[#2b6ba3]'
                             : 'hover:bg-slate-50 text-slate-700 border border-transparent'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-2 truncate">
                           <TableIcon
-                            className={`w-3.5 h-3.5 shrink-0 ${
-                              isSelected
+                            className={`w-3.5 h-3.5 shrink-0 ${isSelected
                                 ? 'text-[#509ee3]'
                                 : 'text-slate-400 group-hover:text-[#509ee3]'
-                            }`}
+                              }`}
                           />
                           <span className="truncate">{tblName}</span>
                         </div>

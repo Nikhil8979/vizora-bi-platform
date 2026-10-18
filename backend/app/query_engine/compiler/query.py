@@ -29,7 +29,8 @@ class SQLCompiler:
             if item.alias:
                 expression += f" AS {item.alias}"
             expressions.append(expression)
-        return f"SELECT {distinct}{', '.join(expressions)}"
+        select_clause = ", ".join(expressions) if expressions else "*"
+        return f"SELECT {distinct}{select_clause}"
 
     def _compile_from(self,query:Query)->str:
         table = query.table

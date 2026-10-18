@@ -13,11 +13,12 @@ import {
   ChevronLeft,
   PanelLeftClose,
   PanelLeft,
+  Wand2,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { Badge } from '@/components/ui/badge'
 
-export type ActiveNavTab = 'overview' | 'members' | 'datasources' | 'workbench' | 'settings'
+export type ActiveNavTab = 'overview' | 'query-builder' | 'workbench' | 'datasources' | 'members' | 'settings'
 
 interface SidebarProps {
   activeTab?: ActiveNavTab
@@ -43,6 +44,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Overview & Metrics',
       icon: LayoutDashboard,
       badge: null,
+    },
+    {
+      id: 'query-builder' as ActiveNavTab,
+      path: '/query-builder',
+      label: 'Query Builder',
+      icon: Wand2,
+      badge: 'Visual',
     },
     {
       id: 'workbench' as ActiveNavTab,
@@ -76,18 +84,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`bg-white border-r border-slate-200/90 h-screen sticky top-0 flex flex-col justify-between shrink-0 select-none z-30 transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'w-[70px]' : 'w-64'
-      }`}
+      className={`bg-white border-r border-slate-200/90 h-screen sticky top-0 flex flex-col justify-between shrink-0 select-none z-30 transition-all duration-300 ease-in-out ${isCollapsed ? 'w-[70px]' : 'w-64'
+        }`}
     >
       {/* Top brand & Organization Header */}
       <div>
         <div className="h-16 px-4 border-b border-slate-100 flex items-center justify-between">
           <div
             onClick={() => navigate('/overview')}
-            className={`flex items-center gap-2.5 cursor-pointer hover:opacity-85 transition truncate ${
-              isCollapsed ? 'mx-auto' : ''
-            }`}
+            className={`flex items-center gap-2.5 cursor-pointer hover:opacity-85 transition truncate ${isCollapsed ? 'mx-auto' : ''
+              }`}
             title="Go to Overview"
           >
             <div className="w-8 h-8 rounded-lg bg-[#509ee3] flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
@@ -157,6 +163,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               location.pathname === item.path ||
               (item.path === '/overview' && location.pathname === '/') ||
               (item.id === 'workbench' && location.pathname === '/sql-editor') ||
+              (item.id === 'query-builder' && (location.pathname === '/query-builder' || location.pathname === '/explore')) ||
               (propActiveTab ? propActiveTab === item.id : false)
 
             return (
@@ -167,24 +174,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   navigate(item.path)
                   onSelectTab?.(item.id)
                 }}
-                className={`w-full flex items-center transition-all cursor-pointer ${
-                  isCollapsed
+                className={`w-full flex items-center transition-all cursor-pointer ${isCollapsed
                     ? 'justify-center p-2.5 rounded-xl ' +
-                      (isActive
-                        ? 'bg-[#f0f7fd] text-[#509ee3] shadow-2xs font-bold border border-[#badcf7]'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50')
+                    (isActive
+                      ? 'bg-[#f0f7fd] text-[#509ee3] shadow-2xs font-bold border border-[#badcf7]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50')
                     : 'justify-between px-3 py-2.5 rounded-xl text-xs font-semibold ' +
-                      (isActive
-                        ? 'bg-[#f0f7fd] text-[#509ee3] shadow-2xs font-bold border border-[#badcf7]'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50')
-                }`}
+                    (isActive
+                      ? 'bg-[#f0f7fd] text-[#509ee3] shadow-2xs font-bold border border-[#badcf7]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50')
+                  }`}
                 title={isCollapsed ? item.label : undefined}
               >
                 <div className={`flex items-center gap-2.5 ${isCollapsed ? 'justify-center' : ''}`}>
                   <Icon
-                    className={`w-4 h-4 transition-colors ${
-                      isActive ? 'text-[#509ee3]' : 'text-slate-400'
-                    }`}
+                    className={`w-4 h-4 transition-colors ${isActive ? 'text-[#509ee3]' : 'text-slate-400'
+                      }`}
                   />
                   {!isCollapsed && <span>{item.label}</span>}
                 </div>

@@ -14,7 +14,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
-import { QueryColumn } from '../types'
+import { QueryColumn, formatColumnHeader } from '../types'
 import {
   ChartType,
   VisualizationConfig,
@@ -27,6 +27,8 @@ interface VisualizationSidebarProps {
   onSelectViewMode: (mode: 'table' | 'chart') => void
   onClose: () => void
   initialTab?: 'picker' | 'settings'
+  requiresAggregation?: boolean
+  onOpenEditor?: () => void
 }
 
 type SettingsTab = 'data' | 'display' | 'axes'
@@ -38,9 +40,15 @@ export const VisualizationSidebar: React.FC<VisualizationSidebarProps> = ({
   onSelectViewMode,
   onClose,
   initialTab = 'picker',
+  requiresAggregation = false,
+  onOpenEditor,
 }) => {
   const [viewState, setViewState] = useState<'picker' | 'settings'>(initialTab)
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('data')
+
+  React.useEffect(() => {
+    setViewState(initialTab)
+  }, [initialTab])
 
   const updateConfig = (updater: (prev: VisualizationConfig) => VisualizationConfig) => {
     onChangeConfig(updater(config))
@@ -220,6 +228,26 @@ export const VisualizationSidebar: React.FC<VisualizationSidebarProps> = ({
               {/* TAB 1: DATA CONFIGURATION (Screenshot 2) */}
               {activeSettingsTab === 'data' && (
                 <div className="space-y-5">
+                  {requiresAggregation && config.type !== 'table' && (
+                    <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs space-y-1.5">
+                      <div className="font-semibold text-blue-900 flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-[#509ee3]" />
+                        <span>Aggregation Needed</span>
+                      </div>
+                      <p className="text-slate-600 leading-relaxed text-[11px]">
+                        Click on <span className="font-semibold text-slate-800">sql editor</span> in the top right corner. Then pick a metric and a column to group by.
+                      </p>
+                      {onOpenEditor && (
+                        <button
+                          onClick={onOpenEditor}
+                          className="text-[11px] font-bold text-[#509ee3] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          Open SQL Editor &rarr;
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {config.type === 'pie' ? (
                     <>
                       {/* Pie Dimension */}
@@ -240,7 +268,7 @@ export const VisualizationSidebar: React.FC<VisualizationSidebarProps> = ({
                         >
                           {columns.map((c) => (
                             <option key={c.name} value={c.name}>
-                              {c.name} ({c.type})
+                              {formatColumnHeader(c.name)} ({c.type})
                             </option>
                           ))}
                         </select>
@@ -272,7 +300,7 @@ export const VisualizationSidebar: React.FC<VisualizationSidebarProps> = ({
                         >
                           {columns.map((c) => (
                             <option key={c.name} value={c.name}>
-                              {c.name} ({c.type})
+                              {formatColumnHeader(c.name)} ({c.type})
                             </option>
                           ))}
                         </select>
@@ -297,7 +325,7 @@ export const VisualizationSidebar: React.FC<VisualizationSidebarProps> = ({
                         >
                           {columns.map((c) => (
                             <option key={c.name} value={c.name}>
-                              {c.name} ({c.type})
+                              {formatColumnHeader(c.name)} ({c.type})
                             </option>
                           ))}
                         </select>
@@ -358,7 +386,7 @@ export const VisualizationSidebar: React.FC<VisualizationSidebarProps> = ({
                               >
                                 {columns.map((c) => (
                                   <option key={c.name} value={c.name}>
-                                    {c.name} ({c.type})
+                                    {formatColumnHeader(c.name)} ({c.type})
                                   </option>
                                 ))}
                               </select>

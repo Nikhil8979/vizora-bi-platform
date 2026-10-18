@@ -1,10 +1,11 @@
 import React, { useRef } from 'react'
-import { Copy, Check, Terminal, Play, RefreshCw, PanelLeft, PanelLeftClose } from 'lucide-react'
+import { Copy, Check, Terminal, Play, RefreshCw, PanelLeft, PanelLeftClose, Bookmark } from 'lucide-react'
 
 interface SqlCodeEditorProps {
   value: string
   onChange: (val: string) => void
   onExecute: () => void
+  onSaveQuestion?: () => void
   isExecuting: boolean
   placeholder?: string
   isCatalogOpen?: boolean
@@ -15,6 +16,7 @@ export const SqlCodeEditor: React.FC<SqlCodeEditorProps> = ({
   value,
   onChange,
   onExecute,
+  onSaveQuestion,
   isExecuting,
   placeholder = 'SELECT * FROM orders LIMIT 100;',
   isCatalogOpen = true,
@@ -97,6 +99,18 @@ export const SqlCodeEditor: React.FC<SqlCodeEditorProps> = ({
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
           </button>
+
+          {onSaveQuestion && (
+            <button
+              onClick={onSaveQuestion}
+              type="button"
+              className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 transition text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs active:bg-slate-100"
+              title="Save this query as a question"
+            >
+              <Bookmark className="w-3.5 h-3.5 text-[#509ee3]" />
+              <span>Save Question</span>
+            </button>
+          )}
 
           {/* Integrated Run Query Action Button */}
           <button
